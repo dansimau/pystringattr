@@ -1,12 +1,9 @@
 import re
 from collections import namedtuple, deque
 
+from .regex import RE_SPLIT, RE_KEY, RE_INDEX
 from .utils import Enum, _missing
 
-
-SPLIT_RE = re.compile(r'\.|(\[[\'"]?\w+[\'"]?\])')
-KEY_RE = re.compile(r'\[[\'"](\w+)[\'"]\]')
-INDEX_RE = re.compile(r'\[\d\]')
 
 StackItem = namedtuple('StackItem', ['name', 'access_method'])
 
@@ -30,7 +27,7 @@ def get_key(obj, index):
     """
     try:
         return obj[index]
-    except (KeyError, IndexError):
+    except (KeyError, IndexError, TypeError):
         return _missing
 
 
@@ -44,10 +41,10 @@ def get_attribute(obj, attr):
         return _missing
 
 
-class JSONNotation(object):
+class StringAttribute(object):
     """
     Used to access a deeply nested attributes of a Python data structure
-    using JSON notation.
+    using a string representation of Python-like syntax.
 
     Eg.:
 
@@ -62,37 +59,37 @@ class JSONNotation(object):
     }
 
     # Return 'woo'
-    JSONNotation('foo.bar[1].baz').apply(my_dict)
+    StringAttribute('foo.bar[1].baz').apply(my_dict)
     """
 
-    def __init__(self, notation=None, default=None, strict=False):
+    def __init__(self, string_attr_path=None, default=None, strict=False):
         self._default = default
         self._strict = strict
-        if notation is not None:
-            self._parse(notation)
+        if string_attr_path is not None:
+            self._parse(string_attr_path)
 
     def __repr__(self):
-        return '%s(\'%s\')' % (self.__class__.__name__, self._notation)
+        return '%s(\'%s\')' % (self.__class__.__name__, self._string_attr_path)
 
     def __str__(self):
-        return '%r' % self._notation
+        return '%r' % self._string_attr_path
 
-    def _parse(self, notation):
-        """Parse notation into a stack of accessors."""
-        self._notation = notation
+    def _parse(self, string_attr_path):
+        """Parse string_attr_path into a stack of accessors."""
+        self._string_attr_path = string_attr_path
         self._stack = deque()
 
-        for node in self._split(notation):
+        for node in self._split(string_attr_path):
 
             # Node is a list index (eg. '[2]')
-            if re.match(INDEX_RE, node):
+            if re.match(RE_INDEX, node):
                 # Convert into integer
                 list_index = int(node.translate(None, '[]'))
                 self._stack.append(StackItem(list_index, AccessorType.INDEX))
 
             # Node is a key (string-based index)
-            elif re.match(KEY_RE, node):
-                key = re.match(KEY_RE, node).groups()[0]
+            elif re.match(RE_KEY, node):
+                key = re.match(RE_KEY, node).groups()[0]
                 self._stack.append(StackItem(key, AccessorType.INDEX))
 
             else:
@@ -104,20 +101,21 @@ class JSONNotation(object):
         raise Exception('Node %r not found' % node)
 
     @classmethod
-    def _split(cls, notation):
-        """Split notation string into list of accessor nodes."""
+    def _split(cls, string_attr_path):
+        """Split string into list of accessor nodes."""
         # Split string at '.' and '[0]'
-        nodes = re.split(SPLIT_RE, notation)
+        nodes = re.split(RE_SPLIT, string_attr_path)
         # Filter out empty position params from the split
         nodes = filter(lambda x: x, nodes)
         return nodes
 
-    def apply(self, obj, notation=None, default=_missing, strict=None):
-        """Retrieve value from an object structure using notation."""
+    def apply(self, obj, string_attr_path=None, default=_missing, strict=None):
+        """Retrieve value from an object structure using string
+        representation of attributes path."""
 
         # Get defaults
-        if notation is None:
-            notation = self._notation
+        if string_attr_path is None:
+            string_attr_path = self._string_attr_path
         if default is _missing:
             default = self._default
         if strict is None:
