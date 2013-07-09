@@ -9,7 +9,7 @@ Example
 
 Define a data structure:
 
- .. code:: python
+.. code:: python
 
     my_dict = {
         'foo': {
@@ -20,31 +20,31 @@ Define a data structure:
         }
     }
 
-Return a deeply nested value:
+Return a deeply nested value::
 
     # Returns 'woo'
     StringAttribute('foo.bar[1].baz').apply(my_dict)
 
-By default, missing attributes in the path will return `None`:
+By default, missing attributes in the path will return `None`::
 
     # Returns None
     StringAttribute('foo.bar.id').apply(my_dict)
 
-If you want to raise errors instead:
+If you want to raise errors instead::
 
     StringAttribute('foo.bar.id').apply(my_dict, strict=True)
 
-Default return can be specified (with `strict=False`):
+Default return can be specified (with `strict=False`)::
 
     # Returns False
     StringAttribute('foo.bar.id').apply(my_dict, default=False)
 
-Parse once, apply many times:
+Parse once, apply many times::
 
     j = StringAttribute('foo.bar[0].baz', default=False)
     j.apply(my_dict)
 
-Use one instance to retrieve arbitrary values:
+Use one instance to retrieve arbitrary values::
 
     j = StringAttribute()
     j.apply(my_dict, 'foo.bar')
