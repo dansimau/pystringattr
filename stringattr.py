@@ -13,7 +13,7 @@ StackItem = namedtuple('StackItem', ['name', 'access_method'])
 AccessorType = Enum(['INDEX', 'DEFAULT'])
 
 
-def first(cls, *vals):
+def first(*vals):
     """Return the first value that's not _missing."""
     for val in vals:
         if val is not _missing:
