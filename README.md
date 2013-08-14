@@ -21,26 +21,21 @@ Define a data structure in Python using dicts and lists:
 Return a deeply nested value:
 
     # Returns 'woo'
-    StringAttribute('foo.bar[1].baz').apply(my_dict)
+    getstrattr(my_dict, 'foo.bar[1].baz')
 
 By default, missing attributes in the path will raise an exception
 unless the value of `default` is set:
 
     # Raises an exception
-    StringAttribute('foo.bar.id').apply(my_dict)
+    getatrattr(my_dict, 'foo.bar.id')
 
     # Returns None
-    StringAttribute('foo.bar.id').apply(my_dict, default=None)
+    getatrattr(my_dict, 'foo.bar.id', default=None)
 
     # Returns False
-    StringAttribute('foo.bar.id').apply(my_dict, default=False)
+    getatrattr(my_dict, 'foo.bar.id', default=False)
 
-Parse once, apply many times:
+Parse/save attribute string once, then get many times:
 
     j = StringAttribute('foo.bar[0].baz', default=None)
-    j.apply(my_dict)
-
-Use one instance to retrieve arbitrary values:
-
-    j = StringAttribute()
-    j.apply(my_dict, 'foo.bar')
+    j.get(my_dict)

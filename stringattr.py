@@ -59,7 +59,7 @@ class StringAttribute(object):
     }
 
     # Return 'woo'
-    StringAttribute('foo.bar[1].baz').apply(my_dict)
+    StringAttribute('foo.bar[1].baz').get(my_dict)
     """
 
     def __init__(self, string_attr_path=None, default=_missing):
@@ -73,6 +73,35 @@ class StringAttribute(object):
 
     def __str__(self):
         return '%r' % self._string_attr_path
+
+    def _get(self, obj, stack, default=_missing):
+        """Retrieve value from an object structure given a list of
+        attributes."""
+        pointer = obj
+
+        # Try all access methods
+        for accessor in stack:
+
+            # Key or index accessors
+            if accessor.access_method == AccessorType.INDEX:
+                pointer = get_key(pointer, accessor.name)
+
+            # Default accessor
+            elif accessor.access_method == AccessorType.DEFAULT:
+
+                # Attempt to get the object attribute first, or if that fails
+                # try to get a key with that name or list index
+                pointer = first(get_attribute(pointer, accessor.name),
+                                get_key(pointer, accessor.name))
+
+            # If nothing could be accessed return None or raise an error
+            if pointer is _missing:
+                if default is not _missing:
+                    return default
+                else:
+                    self._raise_exception(accessor.name)
+
+        return pointer
 
     def _parse(self, string_attr_path):
         """Parse string_attr_path into a stack of accessors."""
@@ -110,7 +139,7 @@ class StringAttribute(object):
         nodes = filter(lambda x: x, nodes)
         return nodes
 
-    def apply(self, obj, string_attr_path=None, default=_missing):
+    def get(self, obj, string_attr_path=None, default=_missing):
         """Retrieve value from an object structure using string
         representation of attributes path."""
 
@@ -124,28 +153,40 @@ class StringAttribute(object):
             string_attr_path = self._string_attr_path
             stack = self._stack
 
-        # Set up pointer at root level object
-        pointer = obj
+        return self._get(obj, stack, default)
 
-        for accessor in stack:
 
-            # Key or index accessors
-            if accessor.access_method == AccessorType.INDEX:
-                pointer = get_key(pointer, accessor.name)
+    def set(self, base_obj, value, string_attr_path=None):
+        """Set value on an object structure using string representation
+        of attributes path."""
+        if string_attr_path is not None:
+            stack = self._parse(string_attr_path)
+        else:
+            string_attr_path = self._string_attr_path
+            stack = self._stack
 
-            # Default accessor
-            elif accessor.access_method == AccessorType.DEFAULT:
+        # Get the name of the attribute we're setting (the last item in
+        # the stack)
+        attr = stack.pop()
 
-                # Attempt to get the object attribute first, or if that fails
-                # try to get a key with that name or list index
-                pointer = first(get_attribute(pointer, accessor.name),
-                                get_key(pointer, accessor.name))
+        # Get the actual object we're going to operate on
+        target_obj = self._get(base_obj, stack)
 
-            # If nothing could be accessed return None or raise an error
-            if pointer is _missing:
-                if default is not _missing:
-                    return default
-                else:
-                    self._raise_exception(accessor.name)
+        # Set the attribute or key value
+        if attr.access_method == AccessorType.INDEX:
+            target_obj[attr.name] = value
+        else:
+            setattr(target_obj, attr.name, value)
 
-        return pointer
+
+# Wrapper functions for a builtin-esque feel...
+
+def getstrattr(obj, attr, default=_missing):
+    """Retrieve value from an object structure using string
+    representation of attributes path."""
+    return StringAttribute().get(obj, attr, default)
+
+def setstrattr(obj, attr, val):
+    """Set value on an object structure using string representation
+    of attributes path."""
+    return StringAttribute().set(obj, val, attr)
