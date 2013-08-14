@@ -62,9 +62,8 @@ class StringAttribute(object):
     StringAttribute('foo.bar[1].baz').apply(my_dict)
     """
 
-    def __init__(self, string_attr_path=None, default=None, strict=False):
+    def __init__(self, string_attr_path=None, default=_missing):
         self._default = default
-        self._strict = strict
         if string_attr_path is not None:
             self._stack = self._parse(string_attr_path)
         self._string_attr_path = string_attr_path
@@ -111,15 +110,13 @@ class StringAttribute(object):
         nodes = filter(lambda x: x, nodes)
         return nodes
 
-    def apply(self, obj, string_attr_path=None, default=_missing, strict=None):
+    def apply(self, obj, string_attr_path=None, default=_missing):
         """Retrieve value from an object structure using string
         representation of attributes path."""
 
         # Get defaults
         if default is _missing:
             default = self._default
-        if strict is None:
-            strict = self._strict
 
         if string_attr_path is not None:
             stack = self._parse(string_attr_path)
@@ -146,7 +143,7 @@ class StringAttribute(object):
 
             # If nothing could be accessed return None or raise an error
             if pointer is _missing:
-                if not strict:
+                if default is not _missing:
                     return default
                 else:
                     self._raise_exception(accessor.name)

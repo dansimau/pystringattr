@@ -23,23 +23,21 @@ Return a deeply nested value:
     # Returns 'woo'
     StringAttribute('foo.bar[1].baz').apply(my_dict)
 
-By default, missing attributes in the path will return `None`:
+By default, missing attributes in the path will raise an exception
+unless the value of `default` is set:
 
-    # Returns None
+    # Raises an exception
     StringAttribute('foo.bar.id').apply(my_dict)
 
-If you want to raise errors instead:
-
-    StringAttribute('foo.bar.id').apply(my_dict, strict=True)
-
-Default return can be specified (with `strict=False`):
+    # Returns None
+    StringAttribute('foo.bar.id').apply(my_dict, default=None)
 
     # Returns False
     StringAttribute('foo.bar.id').apply(my_dict, default=False)
 
 Parse once, apply many times:
 
-    j = StringAttribute('foo.bar[0].baz', default=False)
+    j = StringAttribute('foo.bar[0].baz', default=None)
     j.apply(my_dict)
 
 Use one instance to retrieve arbitrary values:
