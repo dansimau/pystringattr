@@ -27,13 +27,13 @@ By default, missing attributes in the path will raise an exception
 unless the value of `default` is set:
 
     # Raises an exception
-    getatrattr(my_dict, 'foo.bar.id')
+    getstrattr(my_dict, 'foo.bar.id')
 
     # Returns None
-    getatrattr(my_dict, 'foo.bar.id', default=None)
+    getstrattr(my_dict, 'foo.bar.id', default=None)
 
     # Returns False
-    getatrattr(my_dict, 'foo.bar.id', default=False)
+    getstrattr(my_dict, 'foo.bar.id', default=False)
 
 Parse/save attribute string once, then get many times:
 
