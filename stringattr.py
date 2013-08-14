@@ -66,18 +66,18 @@ class StringAttribute(object):
         self._default = default
         self._strict = strict
         if string_attr_path is not None:
-            self._parse(string_attr_path)
+            self._stack = self._parse(string_attr_path)
+        self._string_attr_path = string_attr_path
 
     def __repr__(self):
-        return '%s(\'%s\')' % (self.__class__.__name__, self._string_attr_path)
+        return '%s(%r)' % (self.__class__.__name__, self._string_attr_path)
 
     def __str__(self):
         return '%r' % self._string_attr_path
 
     def _parse(self, string_attr_path):
         """Parse string_attr_path into a stack of accessors."""
-        self._string_attr_path = string_attr_path
-        self._stack = deque()
+        stack = deque()
 
         for node in self._split(string_attr_path):
 
@@ -85,16 +85,18 @@ class StringAttribute(object):
             if re.match(RE_INDEX, node):
                 # Convert into integer
                 list_index = int(node.translate(None, '[]'))
-                self._stack.append(StackItem(list_index, AccessorType.INDEX))
+                stack.append(StackItem(list_index, AccessorType.INDEX))
 
             # Node is a key (string-based index)
             elif re.match(RE_KEY, node):
                 key = re.match(RE_KEY, node).groups()[0]
-                self._stack.append(StackItem(key, AccessorType.INDEX))
+                stack.append(StackItem(key, AccessorType.INDEX))
 
             else:
                 # Default accessor method
-                self._stack.append(StackItem(node, AccessorType.DEFAULT))
+                stack.append(StackItem(node, AccessorType.DEFAULT))
+
+        return stack
 
     def _raise_exception(self, node):
         """Raise exception."""
@@ -114,17 +116,21 @@ class StringAttribute(object):
         representation of attributes path."""
 
         # Get defaults
-        if string_attr_path is None:
-            string_attr_path = self._string_attr_path
         if default is _missing:
             default = self._default
         if strict is None:
             strict = self._strict
 
+        if string_attr_path is not None:
+            stack = self._parse(string_attr_path)
+        else:
+            string_attr_path = self._string_attr_path
+            stack = self._stack
+
         # Set up pointer at root level object
         pointer = obj
 
-        for accessor in self._stack:
+        for accessor in stack:
 
             # Key or index accessors
             if accessor.access_method == AccessorType.INDEX:
