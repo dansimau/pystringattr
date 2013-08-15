@@ -99,7 +99,7 @@ class StringAttribute(object):
                 if default is not _missing:
                     return default
                 else:
-                    self._raise_exception(accessor.name)
+                    self._raise_exception(obj, accessor.name)
 
         return pointer
 
@@ -126,9 +126,9 @@ class StringAttribute(object):
 
         return stack
 
-    def _raise_exception(self, node):
+    def _raise_exception(self, obj, node):
         """Raise exception."""
-        raise Exception('Node %r not found' % node)
+        raise Exception('%r object has no key or attribute at path %r' % (obj.__class__.__name__, node))
 
     @classmethod
     def _split(cls, string_attr_path):
